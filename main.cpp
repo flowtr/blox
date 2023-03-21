@@ -1,5 +1,3 @@
-#include <cstdio>
-#include <optional>
 #include "lua.h"
 #include "lualib.h"
 #include "Luau/CodeGen.h"
@@ -13,9 +11,13 @@
 #include "Luau/ParseOptions.h"
 #include "Luau/ToString.h"
 #include <fstream>
+#include <memory>
 #include <sstream>
+#include <iostream>
 #include <string>
-#include "run.hpp"
+#include <bobux/run.hpp>
+#include <bobux/state.hpp>
+#include <bobux/engine.hpp>
 
 auto main(int argc, char** argv) -> int {
 	Luau::Allocator allocator;
@@ -69,13 +71,25 @@ auto main(int argc, char** argv) -> int {
 		lua_close
 	);
 	luaL_sandboxthread(lua_state.get());
+
 	lua_pushcfunction(lua_state.get(), bobux::print, "print");
   lua_setglobal(lua_state.get(), "print");
   lua_settop(lua_state.get(), 0);
+	
+	auto engine = std::make_unique<bobux::engine::Engine>();
 
-	auto result = bobux::run_code(lua_state.get(), source, compile_options);
+	auto workspace = std::make_unique<bobux::engine::Workspace>();
+	workspace->setup_lua_state(lua_state.get());
+		
+	//auto result = bobux::run_code(lua_state.get(), source, compile_options);
+	//std::cout << result;
 
-	std::printf("%s", result.c_str());
+	while (engine->should_run()) {
+		glClearColor(0.3, 0.3, 0.3, 1.0);
+
+		engine->handle_post_draw();
+	}
+
 
 	return 0;
 }
